@@ -1,228 +1,227 @@
-import nodemailer from "nodemailer";
+const LOGO_URL = "https://yourdomain.com/logo.jpg";
 
-/* ─────────────────────────────────────────
-   CONFIG
-───────────────────────────────────────── */
-const LOGO_URL   = "https://aro-mail-notification-services.vercel.app/api/mail?to=sanjay13649@gmail.com&template=1&username=Sanjay";
-const BRAND_NAME = "Aro";
+/* ======================================================
+   EMAIL TEMPLATES
+====================================================== */
+const getTemplate = ({
+  template,
+  username = "User",
+}) => {
 
-/* ─────────────────────────────────────────
-   SMTP TRANSPORT  (lazy singleton)
-───────────────────────────────────────── */
-let _transporter = null;
+  /* ======================================================
+     TEMPLATE 1 - VERIFICATION SUCCESS
+  ====================================================== */
+  if (template === "1") {
 
-const getTransporter = () => {
-  if (_transporter) return _transporter;
+    return {
+      subject: "Verification Successful",
+      html: `
+        <div style="
+          background:#0f0f0f;
+          padding:40px;
+          font-family:Arial;
+          color:white;
+          text-align:center;
+        ">
 
-  _transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.SMTP_EMAIL,
-      pass: process.env.SMTP_PASSWORD,
-    },
-    pool: true,          // reuse connections
-    maxConnections: 5,
-  });
+          <img src="${LOGO_URL}"
+            width="110"
+            style="
+              border-radius:20px;
+              margin-bottom:20px;
+            "
+          />
 
-  return _transporter;
-};
+          <h1>Verification Successful ✅</h1>
 
-/* ─────────────────────────────────────────
-   BASE SHELL  (shared wrapper for all mails)
-───────────────────────────────────────── */
-const shell = (body) => `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>${BRAND_NAME}</title>
-</head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:48px 16px;">
-    <tr>
-      <td align="center">
-        <table width="520" cellpadding="0" cellspacing="0" style="background:#111111;border-radius:16px;border:1px solid #1f1f1f;overflow:hidden;">
-
-          <!-- HEADER -->
-          <tr>
-            <td style="padding:32px 40px 0;text-align:center;">
-              <img src="${LOGO_URL}" width="48" height="48"
-                   style="border-radius:12px;display:block;margin:0 auto 24px;" alt="${BRAND_NAME}" />
-            </td>
-          </tr>
-
-          <!-- BODY -->
-          ${body}
-
-          <!-- FOOTER -->
-          <tr>
-            <td style="padding:24px 40px 32px;text-align:center;border-top:1px solid #1f1f1f;">
-              <p style="margin:0;font-size:12px;color:#3a3a3a;letter-spacing:0.04em;">
-                © ${new Date().getFullYear()} ${BRAND_NAME} · All rights reserved
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-
-</body>
-</html>`;
-
-/* ─────────────────────────────────────────
-   TEMPLATE REGISTRY
-───────────────────────────────────────── */
-const TEMPLATES = {
-
-  /* ── 1 · SELLER WELCOME ─────────────── */
-  "1": ({ username }) => ({
-    subject: `Welcome to ${BRAND_NAME} Seller`,
-    html: shell(`
-      <tr>
-        <td style="padding:32px 40px 40px;text-align:center;">
-
-          <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">
-            You're in, ${escHtml(username)} 🚀
-          </h1>
-
-          <p style="margin:12px 0 32px;font-size:15px;color:#6b6b6b;line-height:1.65;">
-            Your seller account is live and ready to go.<br/>
-            Start listing products and managing orders right now.
+          <p style="
+            color:#bdbdbd;
+            line-height:1.7;
+            font-size:16px;
+          ">
+            Hey <b>${username}</b>,
+            <br /><br />
+            Your account has been verified successfully.
           </p>
 
-          <a href="https://yourdomain.com/seller/dashboard"
-             style="display:inline-block;padding:13px 32px;background:#ffffff;color:#0a0a0a;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;letter-spacing:0.01em;">
-            Open Dashboard
-          </a>
-
-          <div style="margin-top:36px;padding:20px;background:#161616;border-radius:10px;border:1px solid #1f1f1f;text-align:left;">
-            <p style="margin:0 0 6px;font-size:11px;font-weight:600;color:#3d3d3d;letter-spacing:0.08em;text-transform:uppercase;">
-              What's next
-            </p>
-            <p style="margin:0;font-size:14px;color:#8a8a8a;line-height:1.6;">
-              Add your first product, set up payouts, and explore analytics — everything is waiting for you in the seller dashboard.
-            </p>
+          <div style="
+            background:#1b1b1b;
+            padding:20px;
+            border-radius:20px;
+            margin-top:30px;
+          ">
+            You now have full access to Aro services.
           </div>
 
-        </td>
-      </tr>
-    `),
-  }),
-
-  /* ── 2 · LOGIN ALERT ────────────────── */
-  "2": ({ username }) => ({
-    subject: "New login to your account",
-    html: shell(`
-      <tr>
-        <td style="padding:32px 40px 40px;text-align:center;">
-
-          <div style="display:inline-block;width:48px;height:48px;background:#161616;border:1px solid #1f1f1f;border-radius:12px;line-height:48px;font-size:22px;margin-bottom:24px;">
-            ⚡
-          </div>
-
-          <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.02em;">
-            Login detected
-          </h1>
-
-          <p style="margin:12px 0 32px;font-size:15px;color:#6b6b6b;line-height:1.65;">
-            Hey ${escHtml(username)}, your ${BRAND_NAME} account was just accessed successfully.
-          </p>
-
-          <div style="margin-bottom:28px;padding:20px;background:#161616;border-radius:10px;border:1px solid #1f1f1f;text-align:left;">
-            <p style="margin:0 0 6px;font-size:11px;font-weight:600;color:#3d3d3d;letter-spacing:0.08em;text-transform:uppercase;">
-              Not you?
-            </p>
-            <p style="margin:0;font-size:14px;color:#8a8a8a;line-height:1.6;">
-              If you didn't sign in, reset your password immediately and contact our support team.
-            </p>
-          </div>
-
-          <a href="https://yourdomain.com/account/security"
-             style="display:inline-block;padding:13px 32px;background:#1f1f1f;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;letter-spacing:0.01em;border:1px solid #2a2a2a;">
-            Secure My Account
-          </a>
-
-        </td>
-      </tr>
-    `),
-  }),
-
-};
-
-/* ─────────────────────────────────────────
-   HELPERS
-───────────────────────────────────────── */
-const escHtml = (str = "") =>
-  String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
-const isValidEmail = (email) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-/* ─────────────────────────────────────────
-   SEND MAIL  (reusable utility)
-───────────────────────────────────────── */
-export const sendMail = async ({ to, template, username = "User" }) => {
-  const builder = TEMPLATES[template];
-  if (!builder) throw new Error(`Unknown template: ${template}`);
-
-  const { subject, html } = builder({ username });
-  const transporter = getTransporter();
-
-  const info = await transporter.sendMail({
-    from: `"${BRAND_NAME}" <${process.env.SMTP_EMAIL}>`,
-    to,
-    subject,
-    html,
-  });
-
-  return info;
-};
-
-/* ─────────────────────────────────────────
-   API HANDLER  (Vercel / Next.js)
-───────────────────────────────────────── */
-export default async function handler(req, res) {
-
-  /* CORS */
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "GET")
-    return res.status(405).json({ success: false, error: "Method not allowed" });
-
-  const { to, template, username } = req.query;
-
-  if (!to || !template)
-    return res.status(400).json({ success: false, error: "Required: to, template" });
-
-  if (!isValidEmail(to))
-    return res.status(400).json({ success: false, error: "Invalid email address" });
-
-  if (!TEMPLATES[template])
-    return res.status(400).json({ success: false, error: `Unknown template. Valid: ${Object.keys(TEMPLATES).join(", ")}` });
-
-  try {
-    const info = await sendMail({ to, template, username });
-
-    return res.status(200).json({
-      success: true,
-      message: "Email sent",
-      template,
-      messageId: info.messageId,
-    });
-
-  } catch (err) {
-    console.error("[MAIL ERROR]", err);
-    return res.status(500).json({ success: false, error: err.message });
+        </div>
+      `,
+    };
   }
-}
+
+  /* ======================================================
+     TEMPLATE 2 - REGISTRATION SUCCESS
+  ====================================================== */
+  if (template === "2") {
+
+    return {
+      subject: "Registration Successful",
+      html: `
+        <div style="
+          background:#0f0f0f;
+          padding:40px;
+          font-family:Arial;
+          color:white;
+          text-align:center;
+        ">
+
+          <img src="${LOGO_URL}"
+            width="110"
+            style="
+              border-radius:20px;
+              margin-bottom:20px;
+            "
+          />
+
+          <h1>Welcome to Aro 🚀</h1>
+
+          <p style="
+            color:#bdbdbd;
+            line-height:1.7;
+            font-size:16px;
+          ">
+            Hey <b>${username}</b>,
+            <br /><br />
+            Your registration was completed successfully.
+          </p>
+
+          <div style="
+            background:#1b1b1b;
+            padding:20px;
+            border-radius:20px;
+            margin-top:30px;
+          ">
+            Start exploring features and services inside Aro.
+          </div>
+
+        </div>
+      `,
+    };
+  }
+
+  /* ======================================================
+     TEMPLATE 3 - SELLER FIRST LOGIN
+  ====================================================== */
+  if (template === "3") {
+
+    return {
+      subject: "Seller Dashboard Activated",
+      html: `
+        <div style="
+          background:#0f0f0f;
+          padding:40px;
+          font-family:Arial;
+          color:white;
+          text-align:center;
+        ">
+
+          <img src="${LOGO_URL}"
+            width="110"
+            style="
+              border-radius:20px;
+              margin-bottom:20px;
+            "
+          />
+
+          <h1>Seller Login Successful ⚡</h1>
+
+          <p style="
+            color:#bdbdbd;
+            line-height:1.7;
+            font-size:16px;
+          ">
+            Hey <b>${username}</b>,
+            <br /><br />
+            Your seller dashboard is now active.
+          </p>
+
+          <div style="
+            background:#1b1b1b;
+            padding:20px;
+            border-radius:20px;
+            margin-top:30px;
+          ">
+            Manage products, orders, and grow your business with Aro.
+          </div>
+
+        </div>
+      `,
+    };
+  }
+
+  /* ======================================================
+     TEMPLATE 4 - USER FIRST LOGIN
+  ====================================================== */
+  if (template === "4") {
+
+    return {
+      subject: "Welcome Back",
+      html: `
+        <div style="
+          background:#0f0f0f;
+          padding:40px;
+          font-family:Arial;
+          color:white;
+          text-align:center;
+        ">
+
+          <img src="${LOGO_URL}"
+            width="110"
+            style="
+              border-radius:20px;
+              margin-bottom:20px;
+            "
+          />
+
+          <h1>Welcome 👋</h1>
+
+          <p style="
+            color:#bdbdbd;
+            line-height:1.7;
+            font-size:16px;
+          ">
+            Hey <b>${username}</b>,
+            <br /><br />
+            Thanks for logging into Aro.
+          </p>
+
+          <div style="
+            background:#1b1b1b;
+            padding:20px;
+            border-radius:20px;
+            margin-top:30px;
+          ">
+            Your personalized experience is ready.
+          </div>
+
+        </div>
+      `,
+    };
+  }
+
+  /* ======================================================
+     DEFAULT TEMPLATE
+  ====================================================== */
+  return {
+    subject: "Aro Notification",
+    html: `
+      <div style="
+        background:#0f0f0f;
+        padding:40px;
+        color:white;
+        font-family:Arial;
+      ">
+        Hello ${username}
+      </div>
+    `,
+  };
+};
