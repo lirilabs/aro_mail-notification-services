@@ -200,10 +200,6 @@ export default async function handler(req, res) {
   if (req.method !== "GET")
     return res.status(405).json({ success: false, error: "Method not allowed" });
 
-  /* Auth */
-  if (req.query.key !== process.env.API_SECRET)
-    return res.status(401).json({ success: false, error: "Unauthorized" });
-
   const { to, template, username } = req.query;
 
   if (!to || !template)
