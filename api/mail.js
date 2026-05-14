@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 /* ─────────────────────────────────────────
    CONFIG
 ───────────────────────────────────────── */
-const LOGO_URL   = "https://yourdomain.com/images/logo.jpg";
+const LOGO_URL   = "https://aro-mail-notification-services.vercel.app/api/mail?to=sanjay13649@gmail.com&template=1&username=Sanjay";
 const BRAND_NAME = "Aro";
 
 /* ─────────────────────────────────────────
