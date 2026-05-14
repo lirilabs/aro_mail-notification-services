@@ -1,33 +1,44 @@
 import admin from "firebase-admin";
 import nodemailer from "nodemailer";
-import fs from "fs";
-import path from "path";
 
 /* ======================================================
    Firebase Admin Initialization
    ====================================================== */
-if (!admin.apps.length) {
+const initializeFirebase = () => {
+  if (admin.apps.length > 0) return;
+  
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  if (!privateKey) {
+    console.error("FIREBASE_PRIVATE_KEY is missing from environment variables");
+    return;
+  }
+
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      privateKey: privateKey.replace(/\\n/g, "\n"),
     }),
   });
-}
+};
 
 /* ======================================================
-   SMTP Transport
+   SMTP Transport Helper
    ====================================================== */
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+const getTransporter = () => {
+  if (!process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+    throw new Error("SMTP credentials missing");
+  }
+  return nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: process.env.SMTP_EMAIL,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  });
+};
 
 /* ======================================================
    Serverless Handler
@@ -53,6 +64,10 @@ export default async function handler(req, res) {
   }
 
   try {
+    initializeFirebase();
+    if (admin.apps.length === 0) {
+      throw new Error("Firebase Admin failed to initialize");
+    }
     /* -------------------- AUTH -------------------- */
     const authHeader = req.headers.authorization;
 
@@ -65,47 +80,23 @@ export default async function handler(req, res) {
     const idToken = authHeader.split("Bearer ")[1];
     const decodedToken = await admin.auth().verifyIdToken(idToken);
 
-    /* -------------------- RESOLVE RECIPIENT -------------------- */
-    // Fetch user's email by uid
-    const userRecord = await admin.auth().getUser(decodedToken.uid);
-    const userEmail = userRecord.email;
-
+    /* -------------------- INPUT -------------------- */
     const { to, subject, text, html } = req.body || {};
 
-    // Choose recipient: explicit 'to' takes precedence, otherwise use authenticated user's email
-    const recipientEmail = to || userEmail;
-
-    if (!recipientEmail) {
+    if (!to || !subject || (!text && !html)) {
       return res.status(400).json({
-        error: "No recipient email found: provide 'to' or ensure token user has an email",
-      });
-    }
-
-    /* -------------------- DEFAULT HTML TEMPLATE -------------------- */
-    // If no html provided in request, use default template at project root index.html
-    let finalHtml = html;
-    if (!finalHtml) {
-      try {
-        const templatePath = path.resolve(process.cwd(), "index.html");
-        finalHtml = fs.readFileSync(templatePath, "utf8");
-      } catch (e) {
-        finalHtml = null;
-      }
-    }
-
-    if (!text && !finalHtml) {
-      return res.status(400).json({
-        error: "Required fields: subject and (text or html). No html template found and no text provided.",
+        error: "Required fields: to, subject, text or html",
       });
     }
 
     /* -------------------- SEND EMAIL -------------------- */
+    const transporter = getTransporter();
     await transporter.sendMail({
-      from: `"Hive SMTP" <${process.env.SMTP_EMAIL}>`,
-      to: recipientEmail,
+      from: `"Aro Business" <${process.env.SMTP_EMAIL}>`,
+      to,
       subject,
       text,
-      html: finalHtml,
+      html,
     });
 
     /* -------------------- SUCCESS -------------------- */
